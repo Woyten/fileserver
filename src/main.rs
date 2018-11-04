@@ -1,6 +1,3 @@
-extern crate iron;
-extern crate staticfile;
-
 use iron::middleware::Handler;
 use iron::mime::Mime;
 use iron::prelude::*;
@@ -22,9 +19,9 @@ fn main() {
 }
 
 fn browse(request: &mut Request, static_file_handler: &Static) -> IronResult<Response> {
-    match static_file_handler.handle(request) {
-        file_response @ Ok(_) => return file_response,
-        _ => {}
+    let file_response = static_file_handler.handle(request);
+    if file_response.is_ok() {
+        return file_response;
     }
 
     let mut path = PathBuf::new();
@@ -39,13 +36,15 @@ fn browse(request: &mut Request, static_file_handler: &Static) -> IronResult<Res
     }
 }
 
-
 fn list_paths(request: &Request, paths: ReadDir) -> IronResult<Response> {
     let mut response = String::new();
     response.push_str(&format!("<div>Content of {}</div>", request.url));
     for path in paths {
         let to_push = match path {
-            Ok(file) => format!(r#"<a href="{0}">{0}</a>"#, file.path().file_name().unwrap().to_str().unwrap()),
+            Ok(file) => format!(
+                r#"<a href="{0}">{0}</a>"#,
+                file.path().file_name().unwrap().to_str().unwrap()
+            ),
             Err(err) => format!("{}", err),
         };
         response.push_str(&format!("<div>{}\n</div>", to_push));
